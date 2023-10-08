@@ -1,0 +1,11 @@
+clean-fid
+kornia==0.5.8
+lpips==0.1.4
+piq==0.5.5
+opencv-python==4.5.3.56
+opencv-python-headless==4.5.3.56
+PyOpenGL
+PyOpenGL_accelerate
+glfw
+tensorboard
+git+https://github.com/facebookresearch/pytorch3d.git@stable
