@@ -21,17 +21,16 @@ All dependencies for the environment are provided in requirements.txt.
 pip install -r requirements.txt
 ```
 
-# Todos
-```
-- [] prepare data (data list, dataloader)
-- [] network checkpoint
-- [] evaluation code
-```
+### Todos
+- [ ] prepare data (data list, dataloader)
+- [ ] network checkpoint
+- [ ] evaluation code
+
 
 # Setup
 
 ## Dataset
-tdb
+tdb...
 
 
 
