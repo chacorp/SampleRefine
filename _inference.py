@@ -63,37 +63,39 @@ def main(opt):
     pbar = tqdm(zip(img_paths, msk_paths, nrm_paths))
     for img_file, msk_file, nrm_file in pbar:
         pbar.set_description(f"{img_file}")
+        
         data = {
             'T_inputA' :  img2tensor(img_file, resize=True, size=opt.data_size)[None],
             'T_inputB' :  img2tensor(img_file, resize=True, size=opt.data_size)[None],
             'Vis_maskA' :  img2tensor(msk_file, resize=True, size=opt.data_size)[0][None][None],
             'Vis_maskB' :  img2tensor(msk_file, resize=True, size=opt.data_size)[0][None][None],
             'GT_texture':  torch.zeros([]),
-            'norm_map':img2tensor(nrm_file, resize=True, size=opt.data_size)[None],
-            'has_GT': True,
-            # 'samp_map':torch.zeros([]),
-            'sampled_imageA':img2tensor(img_file, resize=True, size=opt.data_size)[None], # for rTG
+            'norm_map': img2tensor(nrm_file, resize=True, size=opt.data_size)[None],
+            'has_GT': False,
+            'sampled_imageA':img2tensor(img_file, resize=True, size=opt.data_size)[None], # for RefinerNet
         }
+        with torch.no_grad():
+            s_inputA = torch.cat((
+                    data['T_inputA'].to(device), 
+                    data['norm_map'].to(device),
+                    data['Vis_maskA'].to(device)
+                ), dim=1)
+            sampled_texture = model.sampler(s_inputA, mode='s')
+            data['sampled_imageA'] = sampled_texture.detach().requires_grad_()
 
-        sampled, predicted, _, _ = model(data, mode='visualize')
+        prev_out, output, _, _ = model(data, mode='visualize')
 
         name = img_file.split('/')[-1][:-13] # 13 = len('_symmetry.png')
-        F.to_pil_image(sampled[0]).save('{}/{}_sampled.png'.format(opt.out, name))
-        F.to_pil_image(predicted[0]).save('{}/{}_output.png'.format(opt.out, name))
+        if opt.G in ['S1', 'S2']:
+            prev_name = 'partial'
+        else:
+            prev_name = 'sampled'
+        F.to_pil_image(prev_out[0]).save('{}/{}_{}.png'.format(opt.out, name, prev_name))
+        F.to_pil_image(output[0]).save('{}/{}_output.png'.format(opt.out, name))
 
 if __name__ == "__main__":
     train_opt = TrainOptions()
     opt = train_opt.parse()
-    opt.mode       = 'test'
-    opt.G          = 'R1'
-    opt.SamplerNet = 'norm_map_vis_mask'
-    opt.concat     = 'vis_mask_c'
-    opt.use_gate   = True
-    opt.mirror     = True
-    opt.num_blocks = 9
-    opt.num_layers = 3
-    opt.Refine_mode == 'blend'
-
     os.makedirs(opt.out, exist_ok=True)
     
     ### from dataset # generate T_sample
