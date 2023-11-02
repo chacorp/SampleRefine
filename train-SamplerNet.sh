@@ -27,11 +27,9 @@ CUDA_VISIBLE_DEVICES=${GPUS} python train.py \
 	--lambda_vgg 0 \
 	--lambda_feat 0 \
 	--lambda_gan 0 \
-	--num_blocks 8 \
-	--num_layers 3 \
-	--mirror \
+	--G S1 \
 	--use_gate \
 	--concat norm_map_vis_mask \
-	--G S1 \
+	--mirror \
 	--masking \
 	--progressive

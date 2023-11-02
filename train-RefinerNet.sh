@@ -16,7 +16,7 @@ done
 CUDA_VISIBLE_DEVICES=${GPUS} python train.py \
 	--out R1-mirror-vis_mask_c \
 	--data_size 256 \
-	--batch_size 8 \
+	--batch_size 4 \
 	--epoch 30000 \
 	--valid_iter 1000 \
 	--niter 10000 \
@@ -27,14 +27,13 @@ CUDA_VISIBLE_DEVICES=${GPUS} python train.py \
 	--lambda_feat 1 \
 	--lambda_gan 1 \
 	--lambda_LPIPS 0 \
-	--attention none \
+	--G R1 \
 	--num_blocks 9 \
 	--num_layers 3 \
-	--G rTG \
+	--use_gate \
+	--concat vis_mask_c \
 	--Refine_mode blend \
 	--mirror \
-	--concat vis_mask_c \
-	--use_gate \
 	--aug_color \
 	--p 0.4 \
-	--SamplerNet norm_map_vis_mask
+	--SamplerNet S1-mirror-norm_map_vis_mask
