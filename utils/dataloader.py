@@ -73,10 +73,9 @@ def img2numpy(path, resize=False, size=512):
 
 def _get_mask(path='./utils/_mask.png', resize=False, size=256, bn=True):
     mask = img2tensor(path, resize=resize, size=size)
-    mask = (mask > 0).all(0) * 1.0
-    if bn == False:
-        mask = mask * 1.0
-    return mask
+    if bn:
+        return (mask > 0).all(0)
+    return mask[0]
 
 def _get_part_mask(resize=False, size=256):
     uv_mask = _get_mask(resize=resize, size=size)
@@ -120,7 +119,7 @@ def augment_color(img, p=0.8):
                 saturation    = 0.5,
                 hue           = 0.5,
                 p             = p,
-                same_onV2atch = True, 
+                same_on_batch = True, 
     )
     return aug(img)
 
@@ -182,7 +181,6 @@ class ViewDataset(Dataset):
 
         self.uv_mask = _get_mask(resize=self.resize,  size=self.size)
         self.label   = _get_part_mask(resize=self.resize, size=self.size)
-
         #import pdb;pdb.set_trace()
 
     def __len__(self):
@@ -230,9 +228,9 @@ class ViewDataset(Dataset):
         _K = str(_key)
         # 3. target  mask  partial
         ########################### Bottle neck ############################
-        # for angleA        
+        # for angleA
         anc_targetA   = img2tensor(self.txtr_map[_K][_idx],    resize=self.resize, size=self.size)
-        anc_norm      = img2tensor(self.norm_map[_K][_idx],    resize=self.resize, size=self.size)        
+        anc_norm      = img2tensor(self.norm_map[_K][_idx],    resize=self.resize, size=self.size)
         anc_maskA     = img2tensor(self.mask[_K][V1][_idx],    resize=self.resize, size=self.size)
         if not self.opt.progressive and self.opt.masking:
             anc_partA = anc_targetA * anc_maskA

@@ -32,8 +32,7 @@ class TrainOptions():
         parser.add_argument('--device_id', nargs='+', type=int, default=[i for i in range(torch.cuda.device_count())], help='type in gpu id to use')
         parser.add_argument('--max_workers', '-j',    type=int, default=0, help='max number of workers')
         
-        # infer
-        parser.add_argument('--infer',          action='store_true',       help='inference mode')
+        # inference
         parser.add_argument('--norm_map',       type=str,default='../Textures', help='normal map')
         parser.add_argument('--pmask',          type=str,default='../Textures', help='partial mask')
         parser.add_argument('--input', '-i',    type=str, default='none',  help='input directory')        
@@ -102,19 +101,16 @@ class TrainOptions():
 
         ###[ Model ]#######################################################
         parser.add_argument('--Baseline',       action='store_true',       help='if specified, use model from 360 paper')
-        parser.add_argument('--SamplerNet',     type=str, default='none',  help='if specified, use sampled texture by SamplerNet as an input',
-            choices=['none','vis_mask', 'vis_mask_c', 'norm_map', 'norm_map_vis_mask', 'norm_map_vis_mask_c'])
-        parser.add_argument('--FTG_scale',      type=float, default=1,     help='mode for FTG')
+        parser.add_argument('--SamplerNet',     type=str, default='none',  help='if specified, use SamplerNet from specified path')
         
         ### generator
-        parser.add_argument('--G',              type=str, default='TG',    help='generator model', 
+        parser.add_argument('--G',              type=str, default='R1',    help='generator model', 
             choices=[ 'pix2pix','pix2pixHD','UVGAN','360Degree','S1','S2','R1' ])
         parser.add_argument('--Refine_mode',       type=str, default='blend', help='mode for RefinerNet', 
             choices=[ 'blend', 'add', 'noblend' ])
 
         parser.add_argument('--num_blocks',     type=int, default=8,       help='# residual blocks')
         parser.add_argument('--num_layers',     type=int, default=3,       help='# down sample layers')
-        parser.add_argument('--style',          action='store_true',       help='if specified, encode style and modulate features with Adain')
         parser.add_argument('--ngf',            type=int, default=32,      help='# filters in each gnerator')
 
         parser.set_defaults(use_mask=True)
@@ -128,7 +124,6 @@ class TrainOptions():
         parser.add_argument('--D',              type=str, default='PatchD',help='discriminator model', 
             choices=['PatchD', 'MS-D'])
 
-        parser.add_argument('--dpD',            action='store_true',       help='if specified, add Discriminator for densepose')
         parser.add_argument('--conditional',    action='store_true',       help='if specified, feed data with partial concatenated Discriminator')
         parser.add_argument('--num_D',          type=int, default=1,       help='# discriminators to be used in multiscale')
         parser.add_argument('--ndf',            type=int, default=64,      help='# filters in each discriminator')

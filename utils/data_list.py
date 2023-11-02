@@ -5,20 +5,19 @@ import json
 def main(test=False):
     # ----------------------------------------- modify the path relative to your machine
     data_path = '../TexturePaired'        
-    # self.data_path = '/source/jihyeon/Sample-Refine2/TexturePaired/'
     # ----------------------------------------------------------------------------------
 
     if test:
         data_list = [
-            [96, 'MGN_digital_wardrobe_96_2048*']\
+            [96, 'MGN_digital_wardrobe_96_2048*']
         ]
     else:
         data_list = [
             [300, 'eNgine_300__512*'],
             [451, 'surreal_female_451__512*'],
             [478, 'surreal_male_478__512*'],
-            [212,  'AIHUB_212__512*'],
-            [741,  'renderpeople_741__512*'],
+            [212, 'AIHUB_212__512*'],
+            [741, 'renderpeople_741__512*'],
         ]
     
     interval = 10
@@ -31,7 +30,7 @@ def main(test=False):
     # i: 0,1,2,3,4
     # data: eNgine_300__512*, ...
     for i, (_, data) in enumerate(data_list): 
-        norm_map[i] = sorted(glob(f'{data_path}/{data}/normal_obj/*.png'))
+        norm_map[i] = sorted(glob(f'{data_path}/{data}/normal_obj*/*.png'))
         txtr_map[i] = sorted(glob(f'{data_path}/{data}/texture/*.jpg')) \
                             + sorted(glob(f'{data_path}/{data}/texture/*.png'))
         mask[i]     = {}

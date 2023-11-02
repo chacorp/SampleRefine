@@ -22,6 +22,5 @@ CUDA_VISIBLE_DEVICES=${GPUS} python _inference.py \
 	--G S1 \
 	--use_gate \
 	--concat norm_map_vis_mask \
-    --checkpoint S1-mirror-norm_map_vis_mask \
- 	--infer
+    --checkpoint S1-mirror-norm_map_vis_mask
     

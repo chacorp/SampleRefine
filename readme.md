@@ -23,30 +23,13 @@ pip install -r requirements.txt
 
 ### Todos
 - [ ] data preparation (data structure, preprocessing, dataloader)
-- [ ] network checkpoint
+- [v] network checkpoint
 - [ ] evaluation code
 
 
 # Setup
 
-## Download checkpoints
-
-
-## Data preparation (tdb)
-The data needs to be pre-processed using [DensePose](https://github.com/facebookresearch/DensePose). \
-The required pre-processing steps are needed:
-
-1. Obtain indexed UV (IUV) using [DensePose](http://densepose.org/) from source image
-2. Obtain partial texture maps from both source and mirrored view using UV lookup table
-3. Produce a symmetric texture map by merging both partial texture maps.
-
-you can also refer to [Pose-with-Style](https://github.com/BadourAlBahar/pose-with-style) for producing symmetric texture map. \
-
-(Data preprocessing code will be added soon) \
-
-
-
-## Start docker container
+## Docker
 modify the code below or simply use **run_docker.sh** to start the docker container
 ```bash
 docker run --gpus all \
@@ -54,10 +37,71 @@ docker run --gpus all \
     seokg1023/vml-pytorch:vessl
 ```
 
+## Download checkpoints
+The pretrained network checkpoints can be downloaded from [here](https://drive.google.com/drive/folders/1eqrn2sMfySZOxc-O1uf93CelcFU4DHnl?usp=drive_link).
+Download and unzip the checkpoint files and place it as below:
+```
+SampleRefine
+   └── checkpoints
+         ├── R1-mirror-vis_mask_c
+         └── S1-mirror-norm_map_vis_mask
+```
+
+
+## Data preparation (tdb)
+The data needs to be pre-processed using [DensePose](https://github.com/facebookresearch/DensePose) and [Tex2Shape](https://github.com/thmoa/tex2shape). \
+The required pre-processing steps are needed:
+
+1. Obtain indexed UV (IUV) using [DensePose](http://densepose.org/) from source image
+2. Obtain partial texture maps from both source and mirrored view using UV lookup table
+3. Produce a symmetric texture map by merging both partial texture maps.
+
+You can also refer to [Pose-with-Style](https://github.com/BadourAlBahar/pose-with-style) for producing symmetric texture map. \
+To obtain the normal map, Please refer to github repository of [Tex2Shape](https://github.com/thmoa/tex2shape). 
+
+(Data preprocessing code will be added soon) \
+
+
+The created dataset should be prepared as below: 
+```
+Dataset
+   ├── symmetry (partial texture)
+   │     ├── -90
+   │     ├── ...
+   │     └── 90
+   │          ├── image_0000_symmetry.png
+   │          ├── ...
+   │          └── image_0100_symmetry.png
+   ├── mask_symm
+   │     ├── -90
+   │     ├── ...
+   │     └── 90
+   ├── normal_map
+   │     ├── -90
+   │     ├── ...
+   │     └── 90
+   └── texture_map
+         ├── image_0000_texture_map.png
+         ├── ...
+         └── image_0100_texture_map.png
+```
+
+
+
+
+
+## Demo
+use **run_SamplerNet.sh** to run SamplerNet only \
+use **run_RefinerNet.sh** to run full pipeline
+```bash
+bash run_SamplerNet.sh --gpu 0 # choose gpu device
+bash run_RefinerNet.sh --gpu 0 # choose gpu device
+```
+
 
 ## Training
 use **train-SamplerNet.sh** to train the SamplerNet \
-use **train-RefinerNet.sh** to train the RefinerNet 
+use **train-RefinerNet.sh** to train the RefinerNet (requires trained SamplerNet)
 
 ```bash
 bash train-SamplerNet.sh --gpu 0 # choose gpu device
@@ -65,13 +109,9 @@ bash train-RefinerNet.sh --gpu 0 # choose gpu device
 ```
 
 
+
 ## Evaluation
-use **test-SamplerNet.sh** to train the SamplerNet \
-use **test-RefinerNet.sh** to train the RefinerNet
-```bash
-bash test-SamplerNet.sh --gpu 0 # choose gpu device
-bash test-RefinerNet.sh --gpu 0 # choose gpu device
-```
+TBD
 
 
 # Citation
@@ -87,3 +127,15 @@ bash test-RefinerNet.sh --gpu 0 # choose gpu device
   organization={Wiley Online Library}
 }
 ```
+
+```
+@incollection{cha2022generating,
+  title={Generating 3D Human Texture from a Single Image with Sampling and Refinement},
+  author={Cha, Sihun and Seo, Kwanggyoon and Ashtari, Amirsaman and Noh, Junyong},
+  booktitle={ACM SIGGRAPH 2022 Posters},
+  pages={1--2},
+  year={2022}
+}
+```
+
+

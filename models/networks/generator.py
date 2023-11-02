@@ -183,7 +183,7 @@ class GlobalGenerator(nn.Module):
             
     def forward(self, input):
         return self.model(input)
- 
+
 ## SamplerNet
 class SamplerNet(BaseNetwork):
     def __init__(self, 
@@ -211,6 +211,7 @@ class SamplerNet(BaseNetwork):
             use_bias = norm_layer == nn.InstanceNorm2d
 
         self.opt = opt
+        self.concat = self.opt.concat
         input_nc = 4 if 'vis_mask' in self.opt.concat else 3
 
         # Apperance encoder
@@ -246,10 +247,11 @@ class SamplerNet(BaseNetwork):
         self.grid = c
 
         if pretrained:
+            self.concat = self.opt.SamplerNet.split('-')[-1]
             # path = "output/FTG-GC-mirror-L1-1-lpips-1-step-1-2-3-1.5-boolean_mask-vis_mask/netG/G__iter{:>06}.pth".format(30000)
             # path = "output/Sampler4-mirror-norm_map_vis_mask-L1_10/netG/G__iter{:>06}.pth".format(30000)
             # path = "output/Sampler4-mirror-norm_map_vis_mask/netG/G__iter{:>06}.pth".format(30000)
-            path = "output/S1-mirror-norm_map_vis_mask-D/netG/G__iter{:>06}.pth".format(30000)
+            path = "output/{}/netG/G__iter{:>06}.pth".format(self.opt.SamplerNet, 30000)
             
             self.load_state_dict(torch.load(path))
 
@@ -268,7 +270,7 @@ class SamplerNet(BaseNetwork):
             mesh_grid = self.grid.repeat(x.size(0), 1, 1, 1).to(x)
             mesh_grid_permute = mesh_grid.permute(0, 3, 1, 2)
 
-        if 'vis_mask' in self.opt.concat:
+        if 'vis_mask' in self.concat:
             src_ = torch.cat((x[:,:3], x[:,-2:-1]), dim=1)
         else:
             src_ = x[:, :3]
@@ -294,9 +296,10 @@ class SamplerNet(BaseNetwork):
         dec2 = self.dec_conv2(torch.cat((dec1, enc3), dim=1)) # 64       
         dec3 = self.dec_conv3(torch.cat((dec2, enc2), dim=1)) # 128
         dec4 = self.dec_conv4(dec3) # 256
-
+    
+        pred_grid = self.toGrid(dec4)
         ## add offset to the mesh_grid
-        grid_permute = mesh_grid_permute + self.toGrid(dec4) * self.scale         
+        grid_permute = mesh_grid_permute + pred_grid * self.scale         
         grid = grid_permute.permute(0,2,3,1)                    # [B, H, W, 2]
 
         out = F.grid_sample(x[:,:3], grid, align_corners=True)
@@ -310,7 +313,7 @@ class RefinerNet(BaseNetwork):
             ngf          = 32,
             norm_layer   = nn.InstanceNorm2d,
             num_layers   = 3,
-            num_blocks   = 8,
+            num_blocks   = 9,
             use_gate     = True,
             use_dilate   = False,
             padding_type = 'reflect',

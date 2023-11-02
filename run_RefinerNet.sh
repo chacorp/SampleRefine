@@ -27,5 +27,4 @@ CUDA_VISIBLE_DEVICES=${GPUS} python _inference.py \
     --Refine_mode blend \
  	--checkpoint R1-mirror-vis_mask_c \
     --which_epoch 11000 \
-	--SamplerNet S1-mirror-norm_map_vis_mask \
- 	--infer
+	--SamplerNet S1-mirror-norm_map_vis_mask

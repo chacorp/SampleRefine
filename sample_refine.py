@@ -61,7 +61,7 @@ class Model(nn.Module):
         self.criterionGAN    = GANLoss(gan_mode=opt.gan_mode, tensor=self.FloatTensor)
         self.criterionVGG    = VGGLoss(device=self.device)
 
-        if opt.mode !='test':
+        if self.opt.mode not in ['infer', 'test']:
             if self.opt.lambda_render > 0:
                 from utils.renderer import Renderer
                 self.extend   = len(self.opt.render_azim) * len(self.opt.render_elev)
@@ -140,7 +140,7 @@ class Model(nn.Module):
             # concatenates input(partial map) and output(full texture map)
             netD = PatchDiscriminator360(inputD_nc+3)
 
-            if self.opt.mode == 'test':
+            if self.opt.mode in ['infer', 'test']:
                 netG = self.load_model(netG, model='G', checkpoint=self.opt.checkpoint)
             elif self.opt.continue_train:
                 netG = self.load_model(netG, model='G', checkpoint=self.opt.checkpoint)
@@ -202,7 +202,7 @@ class Model(nn.Module):
 
     def load_model(self, net, model, checkpoint, epoch=None):
         if self.opt.which_epoch == 'latest':
-            path = sorted(glob(f"output/{checkpoint}/net{model}/*"))[-1]
+            path = sorted(glob(f"checkpoints/{checkpoint}/net{model}/*"))[-1]
             if 'epoch' in path:
                 e = path.split('epoch')[-1].split('.')[0]
                 self.continue_epoch = int(e)
@@ -212,7 +212,7 @@ class Model(nn.Module):
             else:
                 raise ValueError('invalid file in path!: {}'.format(path))
         else:
-            files = sorted(glob(f"output/{checkpoint}/net{model}/*"))
+            files = sorted(glob(f"checkpoints/{checkpoint}/net{model}/*"))
             if 'epoch' in files[0]:
                 keyword = 'epoch'
             else:

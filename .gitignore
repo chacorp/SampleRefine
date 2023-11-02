@@ -132,6 +132,7 @@ dmypy.json
 */__pycache__/
 */*/__pycache__/
 output/
+checkpoints/
 utils_render/
 DensePose/
 
@@ -142,3 +143,4 @@ models/networks/sync_batchnorm/
 
 *.json
 *.zip
+

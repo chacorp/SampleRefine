@@ -257,11 +257,11 @@ if __name__ == "__main__":
     opt_message = train_opt.message
 
     #######[ Output ]##########################################################################
-    output_folder = os.path.join(os.getcwd(), "output", opt.out)
+    checkpoint_path = os.path.join(os.getcwd(), "checkpoints", opt.out)
 
-    print(f'setting output directory: {output_folder}')
-    os.makedirs(output_folder, exist_ok=True)
-    opt.out = output_folder
+    print(f'setting output directory: {checkpoint_path}')
+    os.makedirs(checkpoint_path, exist_ok=True)
+    opt.out = checkpoint_path
 
     #######[ Summary Writer ]##################################################################
     writer = {}
