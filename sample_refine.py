@@ -79,14 +79,11 @@ class Model(nn.Module):
         self.box            = torch.ceil(BOX * self.opt.data_size / 512).type(torch.int32)
         self.label_mask_bn  = _get_part_mask_bn(resize=self.opt.resize, size=self.opt.data_size).to(self.device)
         self.label_mask     = self.label_mask_bn * 1.0
-        self.uv_mask        = _get_mask(resize=self.opt.resize, size=self.opt.data_size).to(self.device)
+        self.uv_mask        = _get_mask(resize=self.opt.resize, size=self.opt.data_size, bn=False).to(self.device)
     
         ### get transform augmentation
         self.init_augmentation()
-        
-        # self.generatedA = None
-        # self.generatedB = None
-        
+                
         # self.old_lr = opt.lr
 
     def init_augmentation(self):        
@@ -121,10 +118,10 @@ class Model(nn.Module):
         
         # ---------------------------------------------------------- EG 2023 submission
         if KEY == 'S1':
-            netG = SamplerNet(inputG_nc, use_gate=False, visualize=False, pretrained=True, condition=self.opt.SamplerNet, opt=self.opt)
+            netG = SamplerNet(inputG_nc, use_gate=False, visualize=False, pretrained=True, opt=self.opt)
         # -----------------------------------------------------------------------------
         elif KEY == 'S2':
-            netG = SamplerNet2(inputG_nc, use_gate=True, visualize=False, pretrained=True, condition=self.opt.SamplerNet,  opt=self.opt)
+            netG = SamplerNet2(inputG_nc, use_gate=True, visualize=False, pretrained=True,  opt=self.opt)
         else:
             raise ValueError(f"moded not implemented!: {KEY}")
         self.sampler = netG.to(self.device)
@@ -291,7 +288,7 @@ class Model(nn.Module):
                 sampled_texture = self.sampler(s_inputB, mode='s')
                 d['sampled_imageB'] = sampled_texture.detach().requires_grad_()   # [B, 3, H, W]
 
-        if self.opt.G in ['R1', 'rTG', 'bTG']:
+        if self.opt.G in ['R1', 'R2',]:
             d['part_imageA'] = d['sampled_imageA']
             d['part_imageB'] = d['sampled_imageB']
 
@@ -301,10 +298,7 @@ class Model(nn.Module):
         if 'norm_map' in self.opt.concat:
             concat = self.opt.concat[:8] # removing _vis_mask
             d[concat] = data[concat].to(self.device)
-        # import pdb;pdb.set_trace()
-
-        # if self.opt.G in ['rTG', 'bTG']:
-        #     d = self.apply_blur(d)
+            
         
         return d
 
@@ -352,8 +346,7 @@ class Model(nn.Module):
 
     @torch.no_grad()
     def inference(self, datas):
-        if self.opt.G in ['R1','rTG', 'bTG']:
-            # fake_imageA, maskA, fake_imageB, maskB  = self.generate_fake(datas, is_train=False)
+        if self.opt.G in ['R1','R2']:
             (fake_refineA, maskA), (fake_refineB, maskB) = self.generate_fake(datas, is_train=False)
             if self.opt.SamplerNet != 'none':
                 part_imageA = datas['sampled_imageA']
@@ -361,8 +354,8 @@ class Model(nn.Module):
             else:
                 part_imageA = datas['part_imageA']
                 part_imageB = datas['part_imageB']
+                
             if self.opt.Refine_mode == 'blend':
-                # import pdb;pdb.set_trace()
                 fake_imageA = part_imageA * maskA + fake_refineA * (1-maskA)
                 fake_imageB = part_imageB * maskB + fake_refineB * (1-maskB)
             elif self.opt.Refine_mode == 'add':
@@ -382,8 +375,8 @@ class Model(nn.Module):
         datas = self.preprocess_data(data)
 
         if mode == 'generator':
-            g_loss, generatedA, generatorB = self.compute_generator_loss(datas)
-            return g_loss, generatedA, generatorB
+            g_loss = self.compute_generator_loss(datas)
+            return g_loss
 
         elif mode == 'discriminator':
             d_loss = self.compute_discriminator_loss(datas)
@@ -599,12 +592,14 @@ class Model(nn.Module):
         return fake, real
    
     def compute_generator_loss(self, datas, is_train=True):
-        part_imageA, real_image, part_maskA = datas['part_imageA'], datas['real_image'], datas['vis_maskA']
-        part_imageB, real_image, part_maskB = datas['part_imageB'], datas['real_image'], datas['vis_maskB']
-
+        part_imageA = datas['part_imageA']
+        part_imageB = datas['part_imageB']
+        real_image  = datas['real_image']
+        
         G_losses = {}
-                
-        if self.opt.G in ['R1', 'rTG', 'bTG']:
+        
+        # RefinerNet
+        if self.opt.G in ['R1', 'R2']:
             (fake_refineA, maskA), (fake_refineB, maskB) = self.generate_fake(datas, is_train)
             if self.opt.Refine_mode == 'blend':
                 fake_imageA = part_imageA * maskA + fake_refineA * (1-maskA)
@@ -617,21 +612,21 @@ class Model(nn.Module):
                 fake_imageB = part_imageB + fake_refineB
             elif self.opt.Refine_mode == 'noblend':
                 fake_imageA = fake_refineA
-                fake_imageB = fake_refineB
-            fake_refineA = fake_refineA * self.uv_mask
-            fake_refineB = fake_refineB * self.uv_mask
+                fake_imageB = fake_refineB            
+        # SamplerNet
         else:
             fake_imageA, fake_imageB = self.generate_fake(datas, is_train)
+            
+        fake_imageA = fake_imageA * self.uv_mask
+        fake_imageB = fake_imageB * self.uv_mask
 
-        # for visualization
-        generatedA = fake_imageA.clone().detach()
-        generatedB = fake_imageB.clone().detach()
+        ### for visualization
+        # generatedA = fake_imageA.clone().detach()
+        # generatedB = fake_imageB.clone().detach()
         
         # masking valid region (real_image is already masked)
         real_image = real_image * self.uv_mask
 
-        fake_imageA = fake_imageA * self.uv_mask
-        fake_imageB = fake_imageB * self.uv_mask
         # bool_pmask = (part_mask > 0).all(1).unsqueeze(1).repeat(1,3,1,1)
 
         pred_fakeA, pred_realA = self.discriminate(part_imageA, fake_imageA, real_image, datas, is_train)
@@ -639,12 +634,14 @@ class Model(nn.Module):
 
         ### Reconstruction loss
         if self.opt.lambda_L1:
-            if self.opt.SamplerNet == 'none':
-                G_losses['L1S_A'] = self.compute_L1(fake_imageA, part_imageA) * self.opt.lambda_L1
-                G_losses['L1S_B'] = self.compute_L1(fake_imageB, part_imageB) * self.opt.lambda_L1
+            if self.opt.G in ['R1', 'rTG', 'bTG']:
+                G_losses['L1_A'] = self.compute_L1(fake_imageA, part_imageA) * self.opt.lambda_L1   
+                G_losses['L1_B'] = self.compute_L1(fake_imageB, part_imageB) * self.opt.lambda_L1
             else:
                 G_losses['L1_A']  = self.compute_L1(fake_imageA, real_image) * self.opt.lambda_L1
                 G_losses['L1_B']  = self.compute_L1(fake_imageB, real_image) * self.opt.lambda_L1
+                ## [additional loss to original paper]
+                G_losses['L1_AB'] = self.compute_L1(fake_imageA, fake_imageB)
         
         ### perceptual loss (LPIPS)
         if self.opt.lambda_LPIPS > 0:
@@ -666,7 +663,6 @@ class Model(nn.Module):
                 # exclude final prediction
                 num_intermediate_outputs = len(pred_fakeA[i]) - 1
                 # for each layer output
-                # for j in range(num_intermediate_outputs+1):
                 for j in range(num_intermediate_outputs):
                     GAN_Feat_loss += self.criterionL1(pred_fakeA[i][j], pred_realA[i][j].detach()) 
                     GAN_Feat_loss += self.criterionL1(pred_fakeB[i][j], pred_realA[i][j].detach()) 
@@ -674,11 +670,12 @@ class Model(nn.Module):
             
         # vgg loss
         if self.opt.lambda_vgg > 0:
-            G_losses['VGG'] = self.criterionVGG(fake_image, real_image) * self.opt.lambda_vgg
+            G_losses['VGG'] = self.criterionVGG(fake_imageA, real_image) * self.opt.lambda_vgg
+            G_losses['VGG'] = self.criterionVGG(fake_imageB, real_image) * self.opt.lambda_vgg
         
         # Renderloss
         if self.opt.lambda_render > 0:
-            fake_rendered, random_list = self.renderer(fake_image, None)
+            fake_rendered, random_list = self.renderer(fake_imageA, None)
             with torch.no_grad():
                 real_rendered, _       = self.renderer(real_image, random_list)
             # boolean mask
@@ -686,20 +683,21 @@ class Model(nn.Module):
             real_mask = (real_rendered[:,3] > 0).unsqueeze(1).repeat(1,3,1,1)
             G_losses['render'] = self.criterionL1(fake_rendered[:,:3][fake_mask], real_rendered[:,:3][real_mask]) * self.opt.lambda_render
 
-        return G_losses, generatedA, generatedB
+        return G_losses
 
     def compute_discriminator_loss(self, datas, is_train=True):
-        part_imageA, real_image, pmaskA = datas['part_imageA'], datas['real_image'], datas['vis_maskA']
-        part_imageB, real_image, pmaskB = datas['part_imageB'], datas['real_image'], datas['vis_maskB']
-
+        part_imageA = datas['part_imageA']
+        part_imageB = datas['part_imageB']
+        real_image  = datas['real_image']
+        
         D_losses = {}
         if self.opt.SamplerNet != 'none':
             part_imageA = datas['sampled_imageA']
             part_imageB = datas['sampled_imageB']
 
         with torch.no_grad():
-            if self.opt.G in ['R1', 'rTG', 'bTG']:
-                fake_refineA, maskA, fake_refineB, maskB = self.generate_fake(datas, is_train=False)
+            if self.opt.G in ['R1', 'R2']:
+                (fake_refineA, maskA), (fake_refineB, maskB) = self.generate_fake(datas, is_train=False)
                 if self.opt.Refine_mode == 'blend':
                     fake_imageA = part_imageA * maskA + fake_refineA * (1-maskA)
                     fake_imageB = part_imageB * maskB + fake_refineB * (1-maskB)

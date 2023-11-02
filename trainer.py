@@ -25,20 +25,15 @@ class Trainer():
         if opt.mode in ['train', 'debug'] :
             self.optimizer_G, self.optimizer_D = self.model_on_one_gpu.create_optimizers()
         
-        self.generatedA = None
-        self.generatedB = None
-        
         self.old_lr = opt.lr
 
     def run_generator_one_step(self, data):
         self.optimizer_G.zero_grad()
-        g_losses, generatedA, generatedB = self.model(data, mode='generator')
+        g_losses = self.model(data, mode='generator')
         g_loss = sum(g_losses.values()).mean()
         g_loss.backward()
         self.optimizer_G.step()
         self.g_losses = g_losses
-        self.generatedA = generatedA
-        self.generatedB = generatedB
 
     def run_discriminator_one_step(self, data):
         if self.opt.G in ['S1','S2']:
@@ -52,15 +47,10 @@ class Trainer():
         self.d_losses = d_losses
 
     def get_validation_result(self, data):
-        # g_loss, d_loss, _lpipsA, _psnrA, _ssimA, fake_imageA, _lpipsB, _psnrB, _ssimB, fake_imageB = self.model(data, mode='validation')
-        g_loss, d_loss, _lpipsA, _psnrA, _ssimA, _lpipsB, _psnrB, _ssimB = self.model(data, mode='validation')
-        return g_loss, d_loss, _lpipsA, _psnrA, _ssimA, _lpipsB, _psnrB, _ssimB 
+        return self.model(data, mode='validation')
 
     def get_latest_losses(self):
         return self.g_losses, self.d_losses
-
-    def get_latest_generated(self):
-        return self.generated
 
     def save_model(self, path, epoch):
         self.model_on_one_gpu.save(path, epoch)

@@ -9,7 +9,8 @@ import torch.utils.data
 from torch.utils.data import DataLoader
 
 from torchvision.utils import make_grid
-import torchvision.transforms.functional as F
+# import torchvision.transforms.functional as F
+from torchvision.transforms import ToPILImage
 
 from utils.Loggers import get_logger
 from utils.train_options import TrainOptions
@@ -193,15 +194,15 @@ def main(opt, writer, opt_message):
             test_img_nameB   = '{}/test_iter{:06}B.png'.format(save_out,  idx)
             test_resultA     = torch.cat((test_inputA, test_outputA, test_target), dim=-1)
             test_resultB     = torch.cat((test_inputB, test_outputB, test_target), dim=-1)
-            F.to_pil_image(test_resultA).save(test_img_nameA, 'PNG')
-            F.to_pil_image(test_resultB).save(test_img_nameB, 'PNG')
+            ToPILImage()(test_resultA).save(test_img_nameA, 'PNG')
+            ToPILImage()(test_resultB).save(test_img_nameB, 'PNG')
 
             train_img_nameA  = '{}/train_iter{:06}A.png'.format(save_train, idx)
             train_img_nameB  = '{}/train_iter{:06}B.png'.format(save_train, idx)
             train_resultA    = torch.cat((train_inputA, train_outputA, train_target), dim=-1)
             train_resultB    = torch.cat((train_inputB, train_outputB, train_target), dim=-1)
-            F.to_pil_image(train_resultA).save(train_img_nameA, 'PNG')
-            F.to_pil_image(train_resultB).save(train_img_nameB, 'PNG')
+            ToPILImage()(train_resultA).save(train_img_nameA, 'PNG')
+            ToPILImage()(train_resultB).save(train_img_nameB, 'PNG')
 
             ###[ Save model ]##################################################################
             # new_record = best_score['ssimA'] < eval_temp['ssimA'] 
@@ -214,7 +215,7 @@ def main(opt, writer, opt_message):
             if new_record:
                 # best_score = { **eval_temp, 'idx':idx }
                 best_score = {'loss_mean':loss_mean, 'idx':idx}
-                trainer.save_model(path=opt.out, epoch=10000) # overwrite best one
+                trainer.save_model(path=opt.out, epoch=idx) # overwrite best one
                 train_log.info("Best Score~! model saved successfully")                    
             else:
                 best_record = ''
