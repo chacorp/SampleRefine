@@ -1,6 +1,10 @@
 # Generating Texture for 3D Human Avatar from a Single Image using Sampling and Refinement Networks
+
 <!-- ![teaser](demo/representative_image.jpg?raw=true) -->
 ![teaser](demo/teaser3.jpg)
+## [[Project Page]](https://chacorp.github.io/sample-refine/)  
+<a href="https://arxiv.org/abs/2305.00936"><img src="https://img.shields.io/badge/arXiv-2305.00936-b31b1b.svg" height=22.5></a>
+
 <!-- Official implementation code for **Sample&Refine: Generating 3D Human Texture from a Single Image using Sampling and Refinement Networks**. -->
 Official implementation code for [**Generating Texture for 3D Human Avatar from a Single Image using Sampling and Refinement Networks**](https://diglib.eg.org/handle/10.1111/cgf14769) (EG 2023).
 
