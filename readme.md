@@ -23,7 +23,7 @@ pip install -r requirements.txt
 
 ### Todos
 - [ ] data preparation (data structure, preprocessing, dataloader)
-- [v] network checkpoint
+- [x] network checkpoint
 - [ ] evaluation code
 
 
